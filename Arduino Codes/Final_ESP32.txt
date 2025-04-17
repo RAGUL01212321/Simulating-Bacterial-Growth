@@ -1,0 +1,79 @@
+// Pin mapping for LEDs
+const int yellowLED = 23;
+const int greenLED = 26;
+const int redLED = 25;
+
+// 7-segment pin mapping for common anode
+const int segmentPins[7] = {2, 4, 5, 18, 19, 21, 22};  // a to g
+
+// Segment display patterns (LOW = ON for common anode)
+const byte digits[10][7] = {
+  {0, 0, 0, 0, 0, 0, 1},  // 0
+  {1, 0, 0, 1, 1, 1, 1},  // 1
+  {0, 0, 1, 0, 0, 1, 0},  // 2
+  {0, 0, 0, 0, 1, 1, 0},  // 3
+  {1, 0, 0, 1, 1, 0, 0},  // 4
+  {0, 1, 0, 0, 1, 0, 0},  // 5
+  {0, 1, 0, 0, 0, 0, 0},  // 6
+  {0, 0, 0, 1, 1, 1, 1},  // 7
+  {0, 0, 0, 0, 0, 0, 0},  // 8
+  {0, 0, 0, 0, 1, 0, 0}   // 9
+};
+
+void setup() {
+  Serial.begin(115200);
+
+  // Set LED pins as outputs
+  pinMode(yellowLED, OUTPUT);
+  pinMode(greenLED, OUTPUT);
+  pinMode(redLED, OUTPUT);
+
+  // Set 7-segment pins as outputs
+  for (int i = 0; i < 7; i++) {
+    pinMode(segmentPins[i], OUTPUT);
+    digitalWrite(segmentPins[i], HIGH); // Turn off all segments initially
+  }
+}
+
+void displayDigit(int digit) {
+  for (int i = 0; i < 7; i++) {
+    digitalWrite(segmentPins[i], digits[digit][i] ? HIGH : LOW);
+  }
+}
+
+void loop() {
+  // Read voltage from GPIO34 (connected to potentiometer)
+  int potValue = analogRead(34);
+  
+  // Convert the potentiometer value to a voltage between 0 and 5V
+  float voltage = potValue * (5.0 / 4095.0);  // Convert to 0–5V range
+
+  // Convert the voltage to an integer to display on the 7-segment display
+  int voltageDisplay = round(voltage); // Round to nearest integer
+
+  // Display the voltage value on the 7-segment display (as integer)
+  displayDigit(voltageDisplay);
+
+  // Control LEDs based on voltage range
+  if (voltage < 2.0) {  // Low voltage
+    digitalWrite(yellowLED, LOW);  // Turn off yellow
+    digitalWrite(greenLED, LOW);   // Turn off green
+    digitalWrite(redLED, HIGH);    // Turn on red
+  } 
+  else if (voltage >= 2.0 && voltage < 4.0) {  // Medium voltage
+    digitalWrite(yellowLED, HIGH);  // Turn on yellow
+    digitalWrite(greenLED, LOW);    // Turn off green
+    digitalWrite(redLED, LOW);      // Turn off red
+  } 
+  else {  // High voltage
+    digitalWrite(yellowLED, LOW);   // Turn off yellow
+    digitalWrite(greenLED, HIGH);   // Turn on green
+    digitalWrite(redLED, LOW);      // Turn off red
+  }
+
+  // Print the voltage to the Serial Monitor for debugging
+  Serial.print("Voltage: ");
+  Serial.println(voltage);
+
+  delay(100);  // Short delay to prevent rapid updates
+}
